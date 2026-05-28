@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(${hike.name}, ~{::section})}">
+<section th:attr="data-hike-id=${hike.id}, data-organizer=${organizer}">
+    <div class="mb-3">
+        <a th:href="@{/hikes}" class="text-decoration-none">&larr; К списку походов</a>
+    </div>
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+        <h1 class="h2 mb-0" th:text="${hike.name}">Поход</h1>
+        <form th:if="${organizer}" th:action="@{/hikes/{id}/delete(id=${hike.id})}" method="post">
+            <button type="submit" class="btn btn-outline-danger"
+                    onclick="return confirm('Удалить поход и все данные (участники, снаряжение, раскладку)?')">
+                Удалить поход
+            </button>
+        </form>
+    </div>
+    <p class="text-muted">
+        Старт: <span th:text="${hike.startDate}"></span>,
+        <span th:text="${hike.durationDays}"></span> дн.,
+        статус: <span th:text="${hike.status}"></span>
+    </p>
+
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${activeTab == 'participants'} ? 'active'"
+               th:href="@{/hikes/{id}(id=${hike.id}, tab='participants')}">Участники</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${activeTab == 'gear'} ? 'active'"
+               th:href="@{/hikes/{id}(id=${hike.id}, tab='gear')}">Снаряжение</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${activeTab == 'food'} ? 'active'"
+               th:href="@{/hikes/{id}(id=${hike.id}, tab='food')}">Питание</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${activeTab == 'loadplan'} ? 'active'"
+               th:href="@{/hikes/{id}(id=${hike.id}, tab='loadplan')}">Раскладка</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${activeTab == 'my'} ? 'active'"
+               th:href="@{/hikes/{id}(id=${hike.id}, tab='my')}">Моя раскладка</a>
+        </li>
+    </ul>
+
+    <!-- Участники -->
+    <div th:if="${activeTab == 'participants'}">
+        <div class="row g-4" th:if="${organizer}">
+            <div class="col-lg-5">
+                <div class="card shadow-sm">
+                    <div class="card-header">Добавить участника</div>
+                    <div class="card-body">
+                        <form th:action="@{/hikes/{id}/participants(id=${hike.id})}" th:object="${participantForm}" method="post">
+                            <div class="mb-2">
+                                <label class="form-label">Имя</label>
+                                <input class="form-control" th:field="*{name}" required/>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Email</label>
+                                <input class="form-control" th:field="*{email}" type="email"/>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Пол</label>
+                                <select class="form-select" th:field="*{gender}" required>
+                                    <option th:each="g : ${genders}" th:value="${g}" th:text="${g}"></option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Макс. вес рюкзака (кг)</label>
+                                <input class="form-control" th:field="*{maxWeightKg}" type="number" step="0.1" min="0.1" required/>
+                            </div>
+                            <button class="btn btn-success">Добавить</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card shadow-sm mt-3">
+            <div class="card-body p-0">
+                <table class="table mb-0">
+                    <thead><tr><th>Имя</th><th>Email</th><th>Пол</th><th>Лимит, кг</th><th>Роль</th><th></th></tr></thead>
+                    <tbody>
+                    <tr th:each="p : ${participants}">
+                        <td th:text="${p.name}"></td>
+                        <td th:text="${p.email}"></td>
+                        <td th:text="${p.gender}"></td>
+                        <td th:text="${p.maxWeightKg}"></td>
+                        <td th:text="${p.role}"></td>
+                        <td th:if="${organizer and p.role.name() != 'ORGANIZER'}">
+                            <form th:action="@{/hikes/{id}/participants/{pid}/delete(id=${hike.id}, pid=${p.id})}" method="post" class="d-inline">
+                                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Удалить?')">Удалить</button>
+                            </form>
+                        </td>
+                        <td th:unless="${organizer and p.role.name() != 'ORGANIZER'}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Снаряжение -->
+    <div th:if="${activeTab == 'gear'}">
+        <div th:if="${organizer}" class="card shadow-sm mb-3">
+            <div class="card-header">Добавить общее снаряжение (без перезагрузки — AJAX)</div>
+            <div class="card-body">
+                <form id="gearAjaxForm" class="row g-2">
+                    <div class="col-md-5">
+                        <input type="text" id="gearName" class="form-control" placeholder="Название" required/>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" id="gearWeight" class="form-control" placeholder="Вес, кг" step="0.01" min="0.01" required/>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-success">Добавить (JSON)</button>
+                    </div>
+                </form>
+                <div id="gearAjaxMessage" class="small mt-2"></div>
+            </div>
+        </div>
+        <div th:if="${organizer}" class="card shadow-sm mb-3">
+            <div class="card-body">
+                <form th:action="@{/hikes/{id}/gear/copy-from(id=${hike.id})}" method="post" class="row g-2 align-items-end">
+                    <div class="col-md-8">
+                        <label class="form-label">Скопировать из прошлого похода</label>
+                        <select name="sourceHikeId" class="form-select" required>
+                            <option value="">Выберите поход</option>
+                            <option th:each="s : ${copySources}" th:value="${s.id}" th:text="${s.name + ' (' + s.startDate + ')'}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-outline-success">Копировать</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-editable mb-0" id="gearTable">
+                    <thead><tr><th>Название</th><th class="text-end" style="width:8rem">Вес, кг</th><th style="width:7rem">Тип</th><th class="text-end" style="width:11rem"></th></tr></thead>
+                    <tbody id="gearTableBody">
+                    <form th:each="g : ${gear}" th:attr="data-gear-id=${g.id}"
+                          th:if="${organizer or (g.type.name() == 'PERSONAL' and g.ownerParticipantId == myParticipantId)}"
+                          th:action="@{/hikes/{id}/gear/{gid}/update(id=${hike.id}, gid=${g.id})}" method="post"
+                          class="table-form-row">
+                        <tr>
+                            <td>
+                                <input class="form-control form-control-sm" name="name" th:value="${g.name}" required/>
+                            </td>
+                            <td>
+                                <input class="form-control form-control-sm text-end" name="weightKg" type="number" step="0.01" min="0.01"
+                                       th:value="${g.weightKg}" required/>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${g.type}"></span>
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Сохранить</button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger ms-1"
+                                        th:formaction="@{/hikes/{id}/gear/{gid}/delete(id=${hike.id}, gid=${g.id})}"
+                                        formmethod="post"
+                                        onclick="return confirm('Удалить предмет?')">Удалить</button>
+                            </td>
+                        </tr>
+                    </form>
+                    <tr th:each="g : ${gear}" th:attr="data-gear-id=${g.id}"
+                        th:unless="${organizer or (g.type.name() == 'PERSONAL' and g.ownerParticipantId == myParticipantId)}">
+                        <td th:text="${g.name}"></td>
+                        <td class="text-end" th:text="${g.weightKg}"></td>
+                        <td><span class="badge bg-secondary" th:text="${g.type}"></span></td>
+                        <td></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Питание -->
+    <div th:if="${activeTab == 'food'}">
+        <div th:if="${organizer}" class="card shadow-sm mb-3">
+            <div class="card-header">Добавить продукт</div>
+            <div class="card-body">
+                <form th:action="@{/hikes/{id}/food(id=${hike.id})}" method="post" class="row g-2">
+                    <div class="col-md-3"><input class="form-control" name="name" placeholder="Название" required/></div>
+                    <div class="col-md-2"><input class="form-control" name="weightPerPortionKg" type="number" step="0.01" min="0.01" placeholder="кг/порция" required/></div>
+                    <div class="col-md-2"><input class="form-control" name="caloriesPerPortion" type="number" placeholder="ккал"/></div>
+                    <div class="col-md-2"><input class="form-control" name="portionsPerPersonPerDay" type="number" step="0.1" min="0.1" placeholder="порций/день" required/></div>
+                    <div class="col-md-3"><button class="btn btn-success w-100">Добавить</button></div>
+                </form>
+            </div>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-editable mb-0">
+                    <thead>
+                    <tr>
+                        <th>Продукт</th>
+                        <th class="text-end" style="width:6rem">кг/порция</th>
+                        <th class="text-end" style="width:5rem">ккал</th>
+                        <th class="text-end" style="width:6rem">порций/день</th>
+                        <th class="text-end" style="width:6rem">Итого кг</th>
+                        <th class="text-end" style="width:6rem">Итого ккал</th>
+                        <th th:if="${organizer}" class="text-end" style="width:11rem"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <form th:each="f : ${food}" th:if="${organizer}"
+                          th:action="@{/hikes/{id}/food/{fid}/update(id=${hike.id}, fid=${f.id})}"
+                          method="post" class="table-form-row">
+                        <tr>
+                            <td>
+                                <input class="form-control form-control-sm" name="name" th:value="${f.name}" required/>
+                            </td>
+                            <td>
+                                <input class="form-control form-control-sm text-end" name="weightPerPortionKg" type="number" step="0.01" min="0.01"
+                                       th:value="${f.weightPerPortionKg}" required/>
+                            </td>
+                            <td>
+                                <input class="form-control form-control-sm text-end" name="caloriesPerPortion" type="number"
+                                       th:value="${f.caloriesPerPortion}"/>
+                            </td>
+                            <td>
+                                <input class="form-control form-control-sm text-end" name="portionsPerPersonPerDay" type="number" step="0.1" min="0.1"
+                                       th:value="${f.portionsPerPersonPerDay}" required/>
+                            </td>
+                            <td class="text-end text-muted" th:text="${f.totalWeightKg}"></td>
+                            <td class="text-end text-muted" th:text="${f.totalCalories}"></td>
+                            <td class="text-end text-nowrap">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Сохранить</button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger ms-1"
+                                        th:formaction="@{/hikes/{id}/food/{fid}/delete(id=${hike.id}, fid=${f.id})}"
+                                        formmethod="post"
+                                        onclick="return confirm('Удалить продукт?')">Удалить</button>
+                            </td>
+                        </tr>
+                    </form>
+                    <tr th:each="f : ${food}" th:unless="${organizer}">
+                        <td th:text="${f.name}"></td>
+                        <td class="text-end" th:text="${f.weightPerPortionKg}"></td>
+                        <td class="text-end" th:text="${f.caloriesPerPortion} ?: '—'"></td>
+                        <td class="text-end" th:text="${f.portionsPerPersonPerDay}"></td>
+                        <td class="text-end" th:text="${f.totalWeightKg}"></td>
+                        <td class="text-end" th:text="${f.totalCalories}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Раскладка -->
+    <div th:if="${activeTab == 'loadplan'}">
+        <div th:if="${organizer}" class="mb-3">
+            <form th:action="@{/hikes/{id}/load-plan/generate(id=${hike.id})}" method="post" class="d-inline">
+                <button class="btn btn-success">Сформировать раскладку</button>
+            </form>
+            <a th:if="${loadPlan}" th:href="@{/api/hikes/{id}/load-plan/export(id=${hike.id})}" class="btn btn-outline-secondary ms-2" target="_blank">Экспорт JSON</a>
+        </div>
+        <div th:if="${loadPlan == null}" class="alert alert-info">Раскладка ещё не сформирована</div>
+        <div th:if="${loadPlan}">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">Нагрузка по участникам</div>
+                <div class="card-body p-0">
+                    <table class="table mb-0">
+                        <thead><tr><th>Участник</th><th>Вес, кг</th><th>Лимит</th><th>OK</th></tr></thead>
+                        <tbody>
+                        <tr th:each="s : ${loadPlan.summary}">
+                            <td th:text="${s.participantName}"></td>
+                            <td th:text="${s.totalWeightKg}"></td>
+                            <td th:text="${s.maxWeightKg}"></td>
+                            <td><span th:if="${s.withinLimit}" class="badge bg-success">да</span><span th:unless="${s.withinLimit}" class="badge bg-danger">нет</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card shadow-sm">
+                <div class="card-header">Назначения</div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Участник</th><th>Предмет</th><th>Тип</th><th>кг</th></tr></thead>
+                        <tbody>
+                        <tr th:each="a : ${loadPlan.assignments}">
+                            <td th:text="${a.participantName}"></td>
+                            <td th:text="${a.itemName}"></td>
+                            <td th:text="${a.assignmentType}"></td>
+                            <td th:text="${a.effectiveWeightKg}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Моя раскладка -->
+    <div th:if="${activeTab == 'my'}">
+        <div th:if="${myLoadPlan == null}" class="alert alert-info">Для вас пока нет назначений. Сформируйте раскладку (организатор).</div>
+        <div th:if="${myLoadPlan}" class="card shadow-sm">
+            <div class="card-body">
+                <p th:if="${!#lists.isEmpty(myLoadPlan.summary)}">
+                    Итого: <strong th:text="${myLoadPlan.summary[0].totalWeightKg}"></strong> кг
+                    из <span th:text="${myLoadPlan.summary[0].maxWeightKg}"></span> кг
+                </p>
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between" th:each="a : ${myLoadPlan.assignments}">
+                        <span th:text="${a.itemName}"></span>
+                        <span th:text="${a.effectiveWeightKg + ' кг'}"></span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script th:if="${activeTab == 'gear'}" th:src="@{/js/hike-detail.js}"></script>
+</section>
+</html>

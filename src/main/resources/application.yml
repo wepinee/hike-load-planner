@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: hike-load-planner
+  messages:
+    basename: messages
+    encoding: UTF-8
+  thymeleaf:
+    cache: false
+    encoding: UTF-8
+  datasource:
+    url: jdbc:mysql://localhost:3306/hike_load?allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
+    username: hike
+    password: hike_secret
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    # Минимум 32 символа для HS256; в проде задайте через переменную окружения
+    secret: ${JWT_SECRET:hike-load-planner-dev-secret-key-min-32-chars!!}
+    expiration-hours: ${JWT_EXPIRATION_HOURS:24}
+  cors:
+    allowed-origins:
+      - http://localhost:5173
+      - http://127.0.0.1:5173
+
+logging:
+  level:
+    org.hibernate.SQL: debug

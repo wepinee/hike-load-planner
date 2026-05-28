@@ -1,0 +1,8 @@
+# Скопируйте в application-local.yml при своих логине/пароле/порте.
+# Запуск: mvn spring-boot:run -Dspring-boot.run.profiles=local
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/hike_load?allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: hike
+    password: hike_secret

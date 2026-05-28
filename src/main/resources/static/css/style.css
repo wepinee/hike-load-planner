@@ -1,0 +1,32 @@
+body {
+    background-color: #f4f6f4;
+}
+
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    border: none;
+    border-radius: 0.75rem;
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: 600;
+}
+
+/* Форма как строка таблицы: поля попадают в колонки thead */
+form.table-form-row {
+    display: contents;
+}
+
+.table-editable td {
+    vertical-align: middle;
+}

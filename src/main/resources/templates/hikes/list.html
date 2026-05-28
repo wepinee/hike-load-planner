@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout('Мои походы', ~{::section})}">
+<section>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">Мои походы</h1>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-white">
+            <strong>Создать новый поход</strong>
+        </div>
+        <div class="card-body">
+            <form th:action="@{/hikes}" th:object="${hikeForm}" method="post" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label">Название похода</label>
+                    <input type="text" th:field="*{name}" class="form-control" required/>
+                    <div class="text-danger small" th:errors="*{name}"></div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Дата старта</label>
+                    <input type="date" th:field="*{startDate}" class="form-control" required/>
+                    <div class="text-danger small" th:errors="*{startDate}"></div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Дней</label>
+                    <input type="number" th:field="*{durationDays}" class="form-control" min="1" required/>
+                    <div class="text-danger small" th:errors="*{durationDays}"></div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-success w-100">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Название</th>
+                    <th>Дата</th>
+                    <th>Дней</th>
+                    <th>Участников</th>
+                    <th>Снаряжение, кг</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="h : ${hikes}">
+                    <td th:text="${h.name}">Поход</td>
+                    <td th:text="${h.startDate}">2026-01-01</td>
+                    <td th:text="${h.durationDays}">3</td>
+                    <td th:text="${h.participantCount}">0</td>
+                    <td th:text="${h.totalGearWeightKg}">0</td>
+                    <td class="text-nowrap">
+                        <a th:href="@{/hikes/{id}(id=${h.id})}" class="btn btn-sm btn-outline-success">Открыть</a>
+                        <form th:if="${h.organizerUserId == currentUserId}"
+                              th:action="@{/hikes/{id}/delete(id=${h.id})}" method="post" class="d-inline ms-1">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Удалить поход и все данные (участники, снаряжение, раскладку)?')">
+                                Удалить
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(hikes)}">
+                    <td colspan="6" class="text-center text-muted py-4">Пока нет походов — создайте первый</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+</html>

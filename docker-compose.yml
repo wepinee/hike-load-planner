@@ -1,0 +1,22 @@
+# Опционально, если позже захотите Docker. Для курсовой достаточно локального MySQL 8.
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: hike-load-mysql
+    environment:
+      MYSQL_DATABASE: hike_load
+      MYSQL_USER: hike
+      MYSQL_PASSWORD: hike_secret
+      MYSQL_ROOT_PASSWORD: root_secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - hike_load_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "hike", "-phike_secret"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  hike_load_mysql_data:
